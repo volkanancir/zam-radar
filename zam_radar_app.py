@@ -357,12 +357,17 @@ def premium_suresi_dolmus_temizle():
 # TELEGRAM BOT KOMUTLARI
 # ─────────────────────────────────────────────
 def tg_mesaj_gonder(chat_id, text, markup=None):
-    if not TELEGRAM_TOKEN: return
+    if not TELEGRAM_TOKEN:
+        print(f"[DEBUG] TOKEN YOK! chat_id={chat_id}")
+        return
+    print(f"[DEBUG] Gonderiliyor: chat_id={chat_id}, token={TELEGRAM_TOKEN[:15]}...")
     pl = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown", "disable_web_page_preview": True}
     if markup: pl["reply_markup"] = json.dumps(markup)
     try:
-        requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json=pl, timeout=10)
-    except: pass
+        r = requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json=pl, timeout=10)
+        print(f"[DEBUG] Sonuc: {r.status_code} - {r.text[:200]}")
+    except Exception as e:
+        print(f"[DEBUG] HATA: {e}")
 
 def tg_fatura_gonder(chat_id, baslik, aciklama, etiket, stars):
     """Telegram Stars ile odeme iste."""
@@ -388,6 +393,10 @@ def tg_fatura_gonder(chat_id, baslik, aciklama, etiket, stars):
                 {"inline_keyboard": [[{"text": f"💳 {stars} Stars ile Ode", "url": link}]]})
     except Exception as e:
         print(f"Invoice error: {e}")
+
+@app.get("/ping")
+async def ping():
+    return {"ok": True, "token_set": bool(TELEGRAM_TOKEN), "token_prefix": TELEGRAM_TOKEN[:10] if TELEGRAM_TOKEN else "NONE"}
 
 @app.post("/tg/webhook")
 async def tg_webhook(request: Request):
