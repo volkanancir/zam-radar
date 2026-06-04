@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: zam-radar
+    env: python
+    buildCommand: pip install -r requirements_zam.txt
+    startCommand: python zam_radar_app.py --port $PORT
+    envVars:
+      - key: TELEGRAM_TOKEN
+        value: SENIN_TOKENIN
+      - key: ADSENSE_CLIENT
+        value: ca-pub-SENIN_ID
+      - key: ADSENSE_SLOT
+        value: 1234567890
+      - key: BOT_USERNAME
+        value: SENIN_BOT_ADIN
