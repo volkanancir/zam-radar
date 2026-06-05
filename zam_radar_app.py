@@ -45,7 +45,16 @@ PREMIUM_YILLIK_STARS = 400 # 400 Stars/yil (~120 TL)
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zam_radar_premium.db")
 
-GOOGLE_NEWS_RSS = "https://news.google.com/rss/search?q=zam+TL+fiyat+art%C4%B1%C5%9F%C4%B1&hl=tr&gl=TR&ceid=TR:tr"
+GOOGLE_NEWS_RSS = [
+    "https://news.google.com/rss/search?q=zam+TL&hl=tr&gl=TR&ceid=TR:tr",
+    "https://news.google.com/rss/search?q=fiyat+art%C4%B1%C5%9F%C4%B1+TL&hl=tr&gl=TR&ceid=TR:tr",
+    "https://news.google.com/rss/search?q=g%C4%B1da+ekmek+s%C3%BCt+ya%C4%9F+peynir+fiyat&hl=tr&gl=TR&ceid=TR:tr",
+    "https://news.google.com/rss/search?q=benzin+motorin+mazot+akaryak%C4%B1t&hl=tr&gl=TR&ceid=TR:tr",
+    "https://news.google.com/rss/search?q=sigara+alkol+i%C3%A7ki+fiyat&hl=tr&gl=TR&ceid=TR:tr",
+    "https://news.google.com/rss/search?q=elektrik+do%C4%9Falgaz+su+fatura&hl=tr&gl=TR&ceid=TR:tr",
+    "https://news.google.com/rss/search?q=emekli+memur+asgari+%C3%BCcret+maa%C5%9F&hl=tr&gl=TR&ceid=TR:tr",
+    "https://news.google.com/rss/search?q=dolar+euro+alt%C4%B1n+d%C3%B6viz&hl=tr&gl=TR&ceid=TR:tr",
+]
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -95,26 +104,29 @@ def haberleri_getir():
     haberler = []
 
     try:
-        r = s.get(GOOGLE_NEWS_RSS, timeout=15)
-        for item in re.findall(r'<item>(.*?)</item>', r.text, re.DOTALL):
-            t = re.search(r'<title>(.*?)</title>', item)
-            l = re.search(r'<link>(.*?)</link>', item)
-            src = re.search(r'<source[^>]*>(.*?)</source>', item)
-            d = re.search(r'<pubDate>(.*?)</pubDate>', item)
-            if not t: continue
+        for rss_url in GOOGLE_NEWS_RSS:
+            r = s.get(rss_url, timeout=15)
+            if r.status_code != 200:
+                continue
+            for item in re.findall(r'<item>(.*?)</item>', r.text, re.DOTALL):
+                t = re.search(r'<title>(.*?)</title>', item)
+                l = re.search(r'<link>(.*?)</link>', item)
+                src = re.search(r'<source[^>]*>(.*?)</source>', item)
+                d = re.search(r'<pubDate>(.*?)</pubDate>', item)
+                if not t: continue
 
-            baslik = _temizle(t.group(1))
-            url = l.group(1) if l else ""
-            kaynak = _temizle(src.group(1)) if src else ""
-            try:
-                if datetime.strptime(d.group(1)[:25], "%a, %d %b %Y %H:%M:%S") < esik: continue
-            except: continue
-            if not any(k in baslik.lower() for k in "zam|arttı|artış|yükseldi|fiyat|oldu|çıktı".split("|")): continue
+                baslik = _temizle(t.group(1))
+                url = l.group(1) if l else ""
+                kaynak = _temizle(src.group(1)) if src else ""
+                try:
+                    if datetime.strptime(d.group(1)[:25], "%a, %d %b %Y %H:%M:%S") < esik: continue
+                except: continue
+                if not any(k in baslik.lower() for k in "zam|arttı|artış|yükseldi|fiyat|oldu|çıktı|ne kadar".split("|")): continue
 
-            key = re.sub(r'\s+','',baslik[:70]).lower()
-            if key in gorulen: continue
-            gorulen.add(key)
-            haberler.append({"baslik":baslik,"kaynak":kaynak,"url":url,"kategori":_kategori(baslik),"fiyat":_fiyat(baslik)})
+                key = re.sub(r'\s+','',baslik[:70]).lower()
+                if key in gorulen: continue
+                gorulen.add(key)
+                haberler.append({"baslik":baslik,"kaynak":kaynak,"url":url,"kategori":_kategori(baslik),"fiyat":_fiyat(baslik)})
     except Exception as e:
         print(f"RSS: {e}")
 
