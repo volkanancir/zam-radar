@@ -396,7 +396,22 @@ def tg_fatura_gonder(chat_id, baslik, aciklama, etiket, stars):
 
 @app.get("/ping")
 async def ping():
-    return {"ok": True, "token_set": bool(TELEGRAM_TOKEN), "token_prefix": TELEGRAM_TOKEN[:10] if TELEGRAM_TOKEN else "NONE"}
+    token_ok = bool(TELEGRAM_TOKEN)
+    result = {"ok": True, "token_set": token_ok, "token_prefix": TELEGRAM_TOKEN[:10] if token_ok else "NONE"}
+    
+    # Test: direkt mesaj gonder
+    if token_ok:
+        try:
+            r = requests.post(
+                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+                json={"chat_id": "6374791826", "text": "🏓 PONG! Sunucu calisiyor."},
+                timeout=10
+            )
+            result["tg_test"] = r.json()
+        except Exception as e:
+            result["tg_test"] = str(e)
+    
+    return result
 
 @app.post("/tg/webhook")
 async def tg_webhook(request: Request):
